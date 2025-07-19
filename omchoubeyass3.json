@@ -1,0 +1,118 @@
+{
+  "name": "om choubey ass :- 3",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "add2aa54-e200-4483-8429-695c2dc889bb",
+      "name": "When chat message received",
+      "webhookId": "17e60fbe-cb25-4484-a62e-cb079d7641f5"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        300,
+        220
+      ],
+      "id": "edb60c97-ec40-45d2-a7f4-e7ec371cba8d",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "hVcjxtPxU830Hqcj",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        300,
+        0
+      ],
+      "id": "a5a2fada-db94-46f2-87d5-f885dc6417ad",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolSerpApi",
+      "typeVersion": 1,
+      "position": [
+        600,
+        220
+      ],
+      "id": "6d228d1d-9652-4457-bb48-9b3478c34f09",
+      "name": "SerpAPI",
+      "credentials": {
+        "serpApi": {
+          "id": "o9QybhQ6UKMayKqr",
+          "name": "SerpAPI account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SerpAPI": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ff7e7885-57a6-485a-8818-62466022f7d8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "37e8e0f966c5e8210c09ede011397b2b2997c4d32fb6d84803c429188c25468e"
+  },
+  "id": "Tom7MXXmAIrnn3iD",
+  "tags": []
+}
