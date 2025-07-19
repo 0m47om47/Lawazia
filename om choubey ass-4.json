@@ -1,0 +1,238 @@
+{
+  "name": "om choubey ass-4",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "3d931f97-1a87-4140-918e-3e79791f935e",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1020,
+        60
+      ],
+      "webhookId": "a889d2ae-2159-402f-b326-5f61e90f602e"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "analyze the incoming data to check if its a valid html or not. if it is valid return YES else return NO"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -800,
+        60
+      ],
+      "id": "9ebee5cf-6abe-4e2a-bd89-75669108711c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -800,
+        320
+      ],
+      "id": "25c2395c-92be-4afd-ab89-800066fc32b5",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "ebINVGpffaqXwFrP",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "64c2ded2-82fb-4d69-adcd-c37a2139ba77",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "YES",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -440,
+        60
+      ],
+      "id": "4c28b3e5-4e2b-4539-b3f5-c687d0cfcb4d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "n8ntestbucket9090",
+        "fileName": "={{ $('When chat message received').item.json.sessionId }}.html",
+        "binaryData": false,
+        "fileContent": "={{ $('When chat message received').item.json.chatInput }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.awsS3",
+      "typeVersion": 2,
+      "position": [
+        -220,
+        20
+      ],
+      "id": "8fa2039e-b83b-4f6a-9d24-2ed12ec34b15",
+      "name": "Upload a file",
+      "credentials": {
+        "aws": {
+          "id": "3PK5RiKZf0owA1ko",
+          "name": "AWS account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "choubeyom873@gmail.com",
+        "subject": "INVALID HTML",
+        "message": "INVALID HTML",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -220,
+        160
+      ],
+      "id": "a46922bb-d2f5-42d7-9a6e-e689d2b6728c",
+      "name": "Send a message",
+      "webhookId": "b192e2d9-6925-44ee-9592-d1ba1331c9a6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GgXRcuaW637OLzgs",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "choubeyom873@gmail.com",
+        "subject": "HTML uploaded",
+        "message": "HTML uploaded",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e9a80933-04d0-4bb4-843d-7551ddcfa3ac",
+      "name": "Send a message1",
+      "webhookId": "db7a2b3e-ca81-431d-98b1-89d564077bbb",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GgXRcuaW637OLzgs",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Upload a file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload a file": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "805c1086-8139-4434-8e39-125a176e5792",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "37e8e0f966c5e8210c09ede011397b2b2997c4d32fb6d84803c429188c25468e"
+  },
+  "id": "2fI3isRPLMzRq9Ch",
+  "tags": []
+}
