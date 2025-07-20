@@ -1,0 +1,274 @@
+{
+  "name": "om choubey (Multiagent)",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "analyze the incoming data to check if its a valid html or not. if its valid return YES else return NO"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -448,
+        256
+      ],
+      "id": "549b6d70-cf6e-4a8a-9acf-555ecfd36c05",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -672,
+        256
+      ],
+      "id": "12dd38be-5671-4bb5-bfad-92536eea8c24",
+      "name": "Telegram Trigger",
+      "webhookId": "d8280170-46e6-4a11-9398-87909e408fbc",
+      "credentials": {
+        "telegramApi": {
+          "id": "C26QmghyhcQIVmtH",
+          "name": "Telegram account 6"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -448,
+        448
+      ],
+      "id": "4c7ccdc9-fab5-433f-a51b-982e93742720",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "k6wW6qBxtOlr4p4d",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "54808af3-6be4-4fa5-ae21-edfa05b9232b",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "YES",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -48,
+        256
+      ],
+      "id": "95938428-a57e-43d6-ae78-9496a118cbe3",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Telegram Trigger').item.json.message.text }}\nAnalyze the above html for the data contained in it and improve it to create a fascinating landing page for me. make sure you return only html.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        192,
+        48
+      ],
+      "id": "6c146729-70e4-45a7-89f4-951b0157630e",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "sendTo": "shivamkumar22732@gmail.com",
+        "subject": "ho gaya",
+        "message": "thank you",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        160,
+        368
+      ],
+      "id": "933c7612-b47d-4f95-8664-a5e0002406f3",
+      "name": "Send a message",
+      "webhookId": "5cec322b-49f3-47c2-8e0e-4ff27126cf4e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "yT7qRr7DG899T8rO",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        192,
+        240
+      ],
+      "id": "40471c3e-fbac-44de-9bae-176e4f13a2bb",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "k6wW6qBxtOlr4p4d",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        576,
+        112
+      ],
+      "id": "29dae02b-3de8-4c16-b2e4-cf12e5d9c09c",
+      "name": "Send a text message",
+      "webhookId": "18f25349-b8f3-455d-98e6-60f7c6ecb96a",
+      "credentials": {
+        "telegramApi": {
+          "id": "C26QmghyhcQIVmtH",
+          "name": "Telegram account 6"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c465cedc-7f0c-4ac7-a67e-fa486b758620",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bdd33700b3b4f43fc6e2e088b018fc83dac12d0f10ca8515f88fb245ab4bce40"
+  },
+  "id": "787DtMJLhN7U0GhJ",
+  "tags": []
+}
