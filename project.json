@@ -1,0 +1,191 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "telegramBot": "Your_Telegram_Credential",
+        "event": "message",
+        "options": {
+          "listenEvents": ["voice"]
+        }
+      },
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "getFile",
+        "fileId": "={{$json[\"message\"][\"voice\"][\"file_id\"]}}"
+      },
+      "name": "Get Voice File URL",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [400, 300],
+      "credentials": {
+        "telegramApi": "Your_Telegram_Credential"
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "options": {},
+        "headerParametersJson": "{\"Authorization\":\"Bearer {{ $credentials.openai.apiKey }}\"}",
+        "queryParametersJson": "{\"model\":\"whisper-1\"}",
+        "bodyParametersJson": "{}",
+        "sendBinaryData": true,
+        "binaryPropertyName": "data"
+      },
+      "name": "Transcribe (Whisper)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [600, 300],
+      "credentials": {
+        "httpHeaderAuth": "openai"
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "return [{\"transcript\": $json.text}];"
+      },
+      "name": "Extract Transcript",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4",
+        "messages": [
+          {"role":"system","content":"You are a helpful, story‑driven local travel guide."},
+          {"role":"user","content":"I said: {{$node[\"Extract Transcript\"].json[\"transcript\"]}}. The user is in a city and wants a short immersive recommendation based on mood and context."}
+        ]
+      },
+      "name": "OpenAI Chat",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1000, 300],
+      "credentials": {
+        "openAiApi": "Your_OpenAI_Credential"
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "return [{\"ttsText\": $json.choices[0].message.content}];"
+      },
+      "name": "Prepare TTS Text",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://texttospeech.googleapis.com/v1/text:synthesize",
+        "options": {},
+        "headerParametersJson": "{\"Authorization\":\"Bearer {{ $credentials.googleCloud.access_token }}\",\"Content-Type\":\"application/json\"}",
+        "bodyParametersJson": "{\"input\":{\"text\":\"{{$json.ttsText}}\"},\"voice\":{\"languageCode\":\"en-US\",\"name\":\"en-US-Wavenet-D\"},\"audioConfig\":{\"audioEncoding\":\"MP3\"}}"
+      },
+      "name": "Google TTS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [1400, 300],
+      "credentials": {
+        "httpHeaderAuth": "googleCloud"
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json[\"message\"][\"chat\"][\"id\"]}}",
+        "binaryProperty": "data",
+        "options": {}
+      },
+      "name": "Send Voice Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1600, 300],
+      "credentials": {
+        "telegramApi": "Your_Telegram_Credential"
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Voice File URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Voice File URL": {
+      "main": [
+        [
+          {
+            "node": "Transcribe (Whisper)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe (Whisper)": {
+      "main": [
+        [
+          {
+            "node": "Extract Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Transcript": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat": {
+      "main": [
+        [
+          {
+            "node": "Prepare TTS Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare TTS Text": {
+      "main": [
+        [
+          {
+            "node": "Google TTS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google TTS": {
+      "main": [
+        [
+          {
+            "node": "Send Voice Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

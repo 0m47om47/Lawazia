@@ -1,0 +1,216 @@
+{
+  "name": "NomadAI - Voice-First Travel Guide",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "7876c1dc-a681-432d-8b01-830b05b38d35",
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        420,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "telegramApi",
+        "updates": [
+          "message"
+        ],
+        "options": {}
+      },
+      "id": "0d9c0a6b-c74b-4822-82ec-ff42b9d40e02",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        340
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIALS_ID",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-4-turbo",
+        "temperature": 0.3,
+        "prompt": "=You are a travel request analyst. A user sent the following message: \"{{ $json.message.text }}\".\n\nAnalyze the message and extract the city they are in, their current mood, and the type of activity they are looking for (e.g., food, history, art, nature, peaceful, adventure).\n\nRespond ONLY with a valid JSON object containing the keys: `city`, `mood`, and `activity_type`.",
+        "options": {
+          "responseFormat": "json_object"
+        }
+      },
+      "id": "b0680a6b-fcdd-44de-9e41-0a4a849fce8f",
+      "name": "1. Analyze User Request",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 4.2,
+      "position": [
+        860,
+        340
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIALS_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Locations",
+        "options": {
+          "raw": false
+        }
+      },
+      "id": "de5e7e39-0111-477c-87b6-992a728b7f83",
+      "name": "2. Get Locations from DB",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.1,
+      "position": [
+        1080,
+        340
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_CREDENTIALS_ID",
+          "name": "Google account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.City }}",
+              "value2": "={{ $('1. Analyze User Request').item.json.json.city }}"
+            },
+            {
+              "value1": "={{ $json.Type }}",
+              "value2": "={{ $('1. Analyze User Request').item.json.json.activity_type }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "9982462e-48a0-4d43-855c-204135e8489e",
+      "name": "3. Filter for Relevant Places",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "temperature": 0.8,
+        "prompt": "=You are a master storyteller and local guide for NomadAI.\n\nA traveler in '{{ $json.City }}' is feeling '{{ $('1. Analyze User Request').item.json.json.mood }}' and looking for a '{{ $json.Type }}' experience.\n\nYou have suggested '{{ $json.LocationName }}'.\n\nBased on this information: \"{{ $json.Description }}\" and this story angle: \"{{ $json.StoryAngle }}\", write an immersive and engaging paragraph (about 50-70 words) that brings this place to life. Start with a captivating hook. Address the traveler directly without using their name. Do not greet them, just begin the story.",
+        "options": {}
+      },
+      "id": "35a8f6d7-8cd2-4c28-9777-628f8ac3b4a2",
+      "name": "4. Craft the Story",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        340
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "YOUR_OPENAI_CREDENTIALS_ID",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ `Here is a suggestion perfectly suited for how you're feeling:\n\n**${$('3. Filter for Relevant Places').item.json.LocationName}**\n\n${$('4. Craft the Story').item.json.choices[0].message.content}` }}",
+        "extraOptions": {
+          "parse_mode": "MarkdownV2"
+        }
+      },
+      "id": "b3e025d5-24d1-447a-8f64-9d51025a1f6a",
+      "name": "5. Send Recommendation",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        1760,
+        340
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIALS_ID",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "1. Analyze User Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Analyze User Request": {
+      "main": [
+        [
+          {
+            "node": "2. Get Locations from DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Get Locations from DB": {
+      "main": [
+        [
+          {
+            "node": "3. Filter for Relevant Places",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Filter for Relevant Places": {
+      "main": [
+        [
+          {
+            "node": "4. Craft the Story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Craft the Story": {
+      "main": [
+        [
+          {
+            "node": "5. Send Recommendation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

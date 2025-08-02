@@ -1,0 +1,554 @@
+{
+  "name": "Prompt to Video Generator Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "o3-mini-2025-01-31",
+          "mode": "list",
+          "cachedResultName": "O3-MINI-2025-01-31"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "{\n  \"Script\": {\n    \"Intro\": \"40–70 characters (Clear and engaging hook)\",\n    \"Base\": \"280–350 characters (Concise and engaging core content)\",\n    \"CTA\": \"Up to 55 characters (Clear and actionable)\"\n  },\n  \"Title\": \"30–50 characters (Short, engaging, curiosity-driven, e.g., 'I tried this for 7 days... Crazy Results!')\",\n  \"Description\": \"50–150 characters (Clear and concise with key hashtags, context, and CTA)\"\n}\n",
+              "role": "system"
+            },
+            {
+              "content": "=<user-query>\n{{ $('On form submission').item.json['Write the topic name?'] }}\n</user-query>"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        440,
+        0
+      ],
+      "id": "b6f0b919-31cf-4d53-ac44-9a5565124d50",
+      "name": "Idea Generator1",
+      "credentials": {
+        "openAiApi": {
+          "id": "gWiIi2l9qDymHl29",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2c9284a2-efa8-4bf5-a0c4-106604b276b2",
+              "name": "Script",
+              "value": "={{ $json.message.content.Script.Intro }} {{ $json.message.content.Script.Base }} {{ $json.message.content.Script.CTA }}",
+              "type": "string"
+            },
+            {
+              "id": "3821ad3c-1312-4209-ad8c-e91f52dc1ede",
+              "name": "",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        0
+      ],
+      "id": "0ecccfb9-ff12-4b0a-bea3-f32b159bf2a5",
+      "name": "Script1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputText = $json[\"Script\"]; // Directly access the input text\n\n// Split by words instead of sentences\nconst words = inputText.split(/\\s+/); // Split by spaces\nconst chunkSize = Math.ceil(words.length / 3);\n\nconst paragraphs = [];\nfor (let i = 0; i < words.length; i += chunkSize) {\n    paragraphs.push(words.slice(i, i + chunkSize).join(\" \").trim());\n}\n\n// Ensure exactly 3 paragraphs\nwhile (paragraphs.length < 3) {\n    paragraphs.push('');\n}\n\nreturn {\n  result: {\n    data: [\n      {\n          words: paragraphs[0] || '',\n          id: 1,\n          duration: 6\n      },\n      {\n          words: paragraphs[1] || '',\n          id: 2,\n          duration: 6\n      },\n      {\n          words: paragraphs[2] || '',\n          id: 3,\n          duration: 6\n      }\n    ]\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1700,
+        0
+      ],
+      "id": "6f146932-1d3b-4837-9e13-c1ff91e31b1b",
+      "name": "Code2"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-2024-05-13",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-2024-05-13"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "You are an image prompt generator agent for video production. Your role is to create starting frames for a longer video by transforming script segments into visually descriptive image prompt. Output a JSON the prompt for the current script segment that are presented with:    \n{\n\"Prompt\": \"enter prompt here\" \n}\n\nYour prompts should visually describe the starting frame for that 6-second scene and set the time for the video scene you receive.                                 IMPORTANT INSTRUCTIONS:        \n-Never include text in the images, it cannot be animated later\n-Always include the keyword in your prompt\n-Never exceed 240 characters in your prompt.\n-Keep images EXTREMELY simple, don't make things that the video generation model will fail to animate, ai is not good at humans, complex movements, etc. But it's really good at landscapes, POV shots, close ups, etc.                            \n````````\n",
+              "role": "system"
+            },
+            {
+              "content": "=Here's the full script:\n {{ $('Voice Generator1').item.json.Script }}\n\nHere's the current scene:\nScript portion: {{ $json['result.data'].words }}\nScript position: {{ $json['result.data'].id }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        2120,
+        0
+      ],
+      "id": "4a9a2119-13c4-4d36-a58d-8bbab4a7fbca",
+      "name": "Image Creater1",
+      "credentials": {
+        "openAiApi": {
+          "id": "gWiIi2l9qDymHl29",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "inputs",
+              "value": "={{ $json.message.content.Prompt }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2500,
+        0
+      ],
+      "id": "87e3e650-ce59-453a-8a41-af8074c66f9b",
+      "name": "request image1",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "1kFlapvOG2b58VF7",
+          "name": "Custom Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/speech",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"tts-1\",\n  \"input\": \"{{ $json.Script }}\",\n  \"voice\": \"alloy\",\n  \"format\": \"mp3\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1020,
+        0
+      ],
+      "id": "542d2d4c-0212-472f-8434-44073eed441a",
+      "name": "Voice Generator1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1480,
+        0
+      ],
+      "id": "9cae8bf3-99e8-4711-8333-d19318ae9f89",
+      "name": "Wait",
+      "webhookId": "41bc3995-e7c0-4230-b043-c591eb83db31"
+    },
+    {
+      "parameters": {
+        "formTitle": "Generate Your Video",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Write the topic name?"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "8f344408-69cf-4437-916d-c7945c136dc6",
+      "name": "On form submission",
+      "webhookId": "3c8e8f3b-95bd-4244-a36a-05e674419dda"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "result.data",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1900,
+        0
+      ],
+      "id": "6541ea1d-6468-42a1-9bca-b023c82b8b51",
+      "name": "Split Out1"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=C:\\Users\\Visha\\images\\{{ $binary.data.fileName }}-{{ $itemIndex+1 }}.jpg",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2720,
+        0
+      ],
+      "id": "853a2e64-c983-47e8-bb9e-6c3e8dd1865d",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=C:\\Users\\Visha\\images\\{{ $('Voice Generator1').item.binary.data.fileName }}.mpeg",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1260,
+        0
+      ],
+      "id": "958d00d4-3a17-4de5-8b97-8bacb97225f6",
+      "name": "Read/Write Files from Disk1"
+    },
+    {
+      "parameters": {
+        "command": "=ffmpeg -loop 1 -t {{ $('Edit Fields').item.json.durationPerImage }} -i \"C:/Users/Visha/images/{{ $('Edit Fields').item.json.image1 }}\" \\\n       -loop 1 -t {{ $('Edit Fields').item.json.durationPerImage }} -i \"C:/Users/Visha/images/{{ $('Edit Fields').item.json.image2 }}\" \\\n       -loop 1 -t {{ $('Edit Fields').item.json.durationPerImage }} -i \"C:/Users/Visha/images/{{ $('Edit Fields').item.json.image3 }}\" \\\n       -i \"C:/Users/Visha/images/{{ $('Edit Fields').item.json.audio }}\" \\\n       -filter_complex \"[0:v]trim=duration={{ $('Edit Fields').item.json.durationPerImage }}[v0]; \\\n                        [1:v]trim=duration={{ $('Edit Fields').item.json.durationPerImage }}[v1]; \\\n                        [2:v]trim=duration={{ $('Edit Fields').item.json.durationPerImage }}[v2]; \\\n                        [v0][v1][v2]concat=n=3:v=1:a=0[outv]\" \\\n       -map \"[outv]\" -map 3:a -c:v libx264 -tune stillimage -c:a aac -b:a 192k -vsync vfr -shortest \\\n       \"C:/Users/Visha/images/output.mp4\"\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        3660,
+        0
+      ],
+      "id": "8f864df7-a2b4-474a-967d-5bf15f779c02",
+      "name": "Execute Command"
+    },
+    {
+      "parameters": {
+        "fileSelector": "C:\\\\Users\\\\Visha\\\\images\\\\output.mp4",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        3900,
+        0
+      ],
+      "id": "745ae584-c300-4317-a0a9-7176a36831ed",
+      "name": "Read/Write Files from Disk2",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4d33d10e-8c24-41bd-91af-fd55011303d5",
+              "name": "image1",
+              "value": "{{ $binary.data.fileName }}-1.jpg",
+              "type": "string"
+            },
+            {
+              "id": "13faf68b-a194-416f-b547-3fcad99c35c1",
+              "name": "image2",
+              "value": "{{ $binary.data.fileName }}-2.jpg",
+              "type": "string"
+            },
+            {
+              "id": "be995d19-0f71-4799-8e09-b28e02fcd6d8",
+              "name": "image3",
+              "value": "{{ $binary.data.fileName }}-3.jpg",
+              "type": "string"
+            },
+            {
+              "id": "8c65d798-8384-4c38-9ac3-78508d6b45a2",
+              "name": "audio",
+              "value": "{{ $('Voice Generator1').item.binary.data.fileName }}.mpeg",
+              "type": "string"
+            },
+            {
+              "id": "5c330bea-bfa0-4c46-aa9a-5ef763766e7b",
+              "name": "imageCount",
+              "value": "3",
+              "type": "string"
+            },
+            {
+              "id": "45d00c35-2c0d-4579-b5c2-413e1e326580",
+              "name": "durationPerImage",
+              "value": "{{ $json[\"audioDuration\"] / $json[\"imageCount\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "38c89cd0-f2e1-4c1e-8ad4-6e0f258a9357",
+              "name": "audioLength",
+              "value": "={{ $json.stdout }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3320,
+        0
+      ],
+      "id": "5b301627-26e0-4da9-998a-213276f49028",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "command": "=del /Q \"C:\\Users\\Visha\\images\\*.*\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        220,
+        0
+      ],
+      "id": "b1cfbe74-05b3-42a5-8d29-d9c75208426d",
+      "name": "Execute Command1"
+    },
+    {
+      "parameters": {
+        "command": "=ffprobe -i \"C:\\Users\\Visha\\images\\{{ $('Voice Generator1').item.binary.data.fileName }}.mpeg\" -show_entries format=duration -v quiet -of csv=\"p=0\"\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2980,
+        0
+      ],
+      "id": "e79ba6e1-3ff1-4464-8433-ceeb62012cf4",
+      "name": "Audio Length"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Idea Generator1": {
+      "main": [
+        [
+          {
+            "node": "Script1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Script1": {
+      "main": [
+        [
+          {
+            "node": "Voice Generator1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Split Out1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Image Creater1": {
+      "main": [
+        [
+          {
+            "node": "request image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice Generator1": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Execute Command1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "request image1": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out1": {
+      "main": [
+        [
+          {
+            "node": "Image Creater1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk1": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Audio Length",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command1": {
+      "main": [
+        [
+          {
+            "node": "Idea Generator1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Audio Length": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "68a65fdd-6235-410b-af8a-76d6bba30ee3",
+  "meta": {
+    "instanceId": "97289dc2c444250073b56934b14c4ae05e4407fc3c6527414584d87c5e1a738f"
+  },
+  "id": "cvrNgDPc2FbPcatF",
+  "tags": []
+}
+
